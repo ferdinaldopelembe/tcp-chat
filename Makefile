@@ -4,24 +4,31 @@ CXX = g++
 CXX_FLAGS = -std=c++17
 LFLAGS = -L"./lib" -I"./include"
 SFML_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network
+DEFINES = -DSFML_STATIC
+
+# source code files
 SRC = main.cpp
 SERVER_SRC = server.cpp
 CLIENT_SRC = client.cpp
-SERVER_TARGET = ./bin/server.exe
-CLIENT_TARGET = ./bin/client.exe
-DEFINES = -DSFML_STATIC
 
-all:
-	$(CXX) $(CXX_FLAGS) $(DEFINES) $(SERVER_SRC) -o $(SERVER_TARGET) $(LFLAGS) $(SFML_FLAGS)
-	cls
-	$(SERVER_TARGET)
+SERVER_TARGET = ./bin/server.exe
+# clients for tests
+C1_TARGET = ./bin/client1.exe
+C2_TARGET = ./bin/client2.exe
 
 s:
 	$(CXX) $(CXX_FLAGS) $(DEFINES) $(SERVER_SRC) -o $(SERVER_TARGET) $(LFLAGS) $(SFML_FLAGS)
 	cls
 	$(SERVER_TARGET)
 
-c:
-	$(CXX) $(CXX_FLAGS) $(DEFINES) $(CLIENT_SRC) -o $(CLIENT_TARGET) $(LFLAGS) $(SFML_FLAGS)
+c1:
+	$(CXX) $(CXX_FLAGS) $(DEFINES) $(CLIENT_SRC) -o $(C1_TARGET) $(LFLAGS) $(SFML_FLAGS)
 	cls
-	$(CLIENT_TARGET)
+	$(C1_TARGET)
+
+c2:
+	$(CXX) $(CXX_FLAGS) $(DEFINES) $(CLIENT_SRC) -o $(C2_TARGET) $(LFLAGS) $(SFML_FLAGS)
+	cls
+	$(C2_TARGET)
+
+all: s

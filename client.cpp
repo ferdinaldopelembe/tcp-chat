@@ -11,7 +11,7 @@ int main() {
         return 1;
     }
 
-    std::cout << "Conexao feita com sucesso, envie mensagens de teste ao servidor...\n";
+    std::cout << "Conexao feita com sucesso!\n";
 
     do {
         sf::Packet packet;
