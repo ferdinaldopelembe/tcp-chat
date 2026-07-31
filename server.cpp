@@ -40,7 +40,7 @@ int main() {
 
                 if (message == "sair") {
                     clients.erase(clients.begin() + i);
-                    std::cout << "O cliente " << clientId << " saiu...\n\a";
+                    std::cout << "O cliente " << clientId << " saiu...\n";
                 } else {
                     std::cout << "client " << clientId << "> " << message << "\n";
                 }
