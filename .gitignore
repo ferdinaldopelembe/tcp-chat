@@ -1,0 +1,11 @@
+# Executáveis e arquivos de compilação
+bin/
+*.exe
+*.o
+
+# Arquivos de configuração da IDE
+.vscode/
+
+# Se a pasta include/lib for a própria SFML que você baixou
+include/
+lib/
