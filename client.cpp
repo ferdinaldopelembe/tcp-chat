@@ -1,6 +1,19 @@
 #include <SFML/Network.hpp>
 #include <iostream>
+#include <atomic>
+#include <thread>
 #include "consts.hpp"
+
+void receiveMessages(sf::TcpSocket& socket, std::atomic<bool>& running) {
+    while (running) {
+        sf::Packet packet;
+        if (socket.receive(packet) == sf::Socket::Status::Done) {
+            std::string message;
+            packet >> message;
+            std::cout << message << "\n";
+        }
+    }
+}
 
 int main() {
     sf::TcpSocket socket;
@@ -12,6 +25,9 @@ int main() {
     }
 
     std::cout << "Conexao feita com sucesso!\n";
+
+    std::atomic<bool> running(true);
+    std::thread receiveThread(receiveMessages, std::ref(socket), std::ref(running));
 
     do {
         sf::Packet packet;
@@ -26,5 +42,7 @@ int main() {
         }
 
     } while(message != "sair");
+
+    running = false;
     
 }
