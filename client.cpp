@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <thread>
 #include <atomic>
+#include <windows.h>
 
 #include "message.hpp"
 #include "user.hpp"
@@ -17,26 +18,51 @@ void clearScreen() {
     #endif
 }
 
+void gotoXY(int x, int y) {
+    COORD coord;
+    coord.X = x;
+    coord.Y = y;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+}
+
 sf::TcpSocket createSocket() {
     sf::TcpSocket socket;
+    socket.setBlocking(false);
     return socket;
 }
 
 void tryToConnect(sf::TcpSocket& socket) {
     clearScreen();
-    if (socket.connect(IP, PORT) == sf::Socket::Status::Done) {
-        std::cout << "Connected to server!" << std::endl;
-    } else {
-        std::cerr << "Error: Could not connect to server." << std::endl;
-        exit(EXIT_FAILURE);
+    sf::Socket::Status status;
+    status = socket.connect(IP, PORT);
+    socket.setBlocking(true);
+    switch (status) {
+        case sf::Socket::Status::Done:
+            std::cout << "\rConnected to server!" << std::endl;
+            break;
+
+        case sf::Socket::Status::NotReady:
+            std::cout << "\rConecting to server..." << std::endl << std::flush;
+            sf::sleep(sf::milliseconds(200));
+            break;
+    
+        default:
+            std::cerr << "Error: Could not connect to server." << std::endl;
+            exit(EXIT_FAILURE);
     }
+    socket.setBlocking(false);
+    clearScreen();
 }
 
 void showMessages(const std::vector<std::string>& messageBuffer) {
     clearScreen();
+    // std::cout << "\n\n\n\n";
     for (const auto& message : messageBuffer) {
         std::cout << message << std::endl;
     }
+    // gotoXY(0,0);
+    std::cout << "\nType 'q!' to quit." << std::endl;
+    std::cout << "-----------------------------------" << std::endl;
     std::cout << "> ";
 }
 
@@ -71,7 +97,7 @@ void receiveMessages(sf::TcpSocket& socket, std::vector<std::string>& messageBuf
             messageBuffer.push_back(message);
             showMessages(messageBuffer);
         }
-        sf::sleep(sf::milliseconds(20));
+        sf::sleep(sf::milliseconds(200));
     }
 }
 
