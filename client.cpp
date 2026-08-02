@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <thread>
 #include <atomic>
-#include <windows.h>
+#include <conio.h>
 
 #include "message.hpp"
 #include "user.hpp"
@@ -16,13 +16,6 @@ void clearScreen() {
     #else
         system("clear");
     #endif
-}
-
-void gotoXY(int x, int y) {
-    COORD coord;
-    coord.X = x;
-    coord.Y = y;
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 }
 
 sf::TcpSocket createSocket() {
@@ -54,28 +47,51 @@ void tryToConnect(sf::TcpSocket& socket) {
     clearScreen();
 }
 
-void showMessages(const std::vector<std::string>& messageBuffer) {
+void showMessages(
+        const std::vector<std::string>& messageBuffer,
+        const std::string currentInput = ""
+    ) {
     clearScreen();
-    // std::cout << "\n\n\n\n";
     for (const auto& message : messageBuffer) {
         std::cout << message << std::endl;
     }
-    // gotoXY(0,0);
     std::cout << "\nType 'q!' to quit." << std::endl;
     std::cout << "-----------------------------------" << std::endl;
-    std::cout << "> ";
+    std::cout << "> " << currentInput << std::flush;
 }
 
-void sendMessage(sf::TcpSocket& socket, User user, std::vector<std::string>& messageBuffer) {
-    std::string input = "";
-    std::getline(std::cin, input);
-
+void sendMessage(
+        sf::TcpSocket& socket,
+        User user,
+        std::string& input,
+        std::vector<std::string>& messageBuffer
+    ) {
+    if (kbhit()) {
+        char key = getch();
+        switch(key) {
+            case '\r':
+                break;
+            case '\b':
+                if (!input.empty()) {
+                    input.pop_back();
+                    std::cout << "\b \b" << std::flush;
+                }
+                return;
+            default:
+                if (key != '\t') {
+                    input += key;
+                    putchar(key);
+                }
+                return;
+        }
+    } else {
+        return;
+    }
     if (input == "q!") {
         exit(EXIT_SUCCESS);
     }
 
     std::string selfSerializedMessage = "me> " + input;
-
     sf::Packet packet = sf::Packet();
     packet << user.getName() << input;
 
@@ -83,10 +99,18 @@ void sendMessage(sf::TcpSocket& socket, User user, std::vector<std::string>& mes
         std::cerr << "Error: Could not send message." << std::endl;
     } else {
         messageBuffer.push_back(selfSerializedMessage);
+        input.clear();
     }
+
+    showMessages(messageBuffer, input);
 }
 
-void receiveMessages(sf::TcpSocket& socket, std::vector<std::string>& messageBuffer, std::atomic<bool>& running) {
+void receiveMessages(
+        sf::TcpSocket& socket,
+        const std::string& currentInput,
+        std::vector<std::string>& messageBuffer,
+        std::atomic<bool>& running
+    ) {
     while (running) {
         sf::Packet packet;
     
@@ -95,7 +119,7 @@ void receiveMessages(sf::TcpSocket& socket, std::vector<std::string>& messageBuf
 
             packet >> message;
             messageBuffer.push_back(message);
-            showMessages(messageBuffer);
+            showMessages(messageBuffer, currentInput);
         }
         sf::sleep(sf::milliseconds(200));
     }
@@ -104,6 +128,7 @@ void receiveMessages(sf::TcpSocket& socket, std::vector<std::string>& messageBuf
 int main() {
     std::vector<std::string> messageBuffer;
     std::atomic<bool> running(true);
+    std::string input;
 
     sf::TcpSocket socket = createSocket();
     tryToConnect(socket);
@@ -111,13 +136,17 @@ int main() {
     User user = User::create();
     showMessages(messageBuffer);
 
-    std::thread receiverThread(receiveMessages, std::ref(socket), std::ref(messageBuffer), std::ref(running));
-
-    sf::sleep(sf::milliseconds(200));
+    std::thread receiverThread(
+        receiveMessages,
+        std::ref(socket),
+        std::ref(input),
+        std::ref(messageBuffer),
+        std::ref(running)
+    );
+    
     while (running) {
-        sendMessage(socket, user, messageBuffer);
-        showMessages(messageBuffer);
-        sf::sleep(sf::milliseconds(70));
+        sendMessage(socket, user, input, messageBuffer);
+        sf::sleep(sf::milliseconds(10));
     }
 
     return 0;
